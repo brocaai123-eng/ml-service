@@ -13,6 +13,12 @@ app = FastAPI(title="BrocaAI ML Service", version="1.0.0")
 
 AUTH_SECRET = os.environ.get("ML_AUTH_SECRET", "")
 
+@app.on_event("startup")
+async def startup_event():
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logging.info("BrocaAI ML Service starting on port %s", os.environ.get("PORT", "8000"))
+
 
 def _check_auth(authorization: str | None):
     if AUTH_SECRET and authorization != f"Bearer {AUTH_SECRET}":
