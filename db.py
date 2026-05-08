@@ -50,30 +50,34 @@ def fetch_crime_records(zip_code: str, limit: int = 180) -> list[dict]:
     return res.data or []
 
 
-def fetch_energy_data(state: str = "FL", limit: int = 52) -> list[dict]:
-    res = (
-        get_client()
-        .table("energy_data")
-        .select("collected_at, consumption_mwh, price_cents_kwh, generation_revenue")
-        .eq("state", state)
-        .order("collected_at", desc=False)
-        .limit(limit)
-        .execute()
-    )
-    return res.data or []
+def fetch_energy_data(zip_code: str = "", limit: int = 52) -> list[dict]:
+    q = get_client().table("energy_data").select("record_date, consumption, capacity_pct, utility_name")
+    if zip_code:
+        q = q.eq("zip", zip_code)
+    res = q.order("record_date", desc=False).limit(limit).execute()
+    rows = res.data or []
+    for r in rows:
+        r["collected_at"] = r.get("record_date")
+        r["consumption_mwh"] = r.get("consumption")
+        r["price_cents_kwh"] = r.get("capacity_pct")
+    return rows
 
 
 def fetch_news_signals(zip_code: str, limit: int = 60) -> list[dict]:
     res = (
         get_client()
         .table("news_signals")
-        .select("published_at, sentiment")
+        .select("signal_date, sentiment_score, headline, signal_type")
         .eq("zip", zip_code)
-        .order("published_at", desc=True)
+        .order("signal_date", desc=True)
         .limit(limit)
         .execute()
     )
-    return res.data or []
+    rows = res.data or []
+    for r in rows:
+        r["published_at"] = r.get("signal_date")
+        r["sentiment"] = r.get("sentiment_score")
+    return rows
 
 
 def fetch_properties(zip_code: str) -> list[dict]:
@@ -118,11 +122,11 @@ def upsert_prediction(row: dict[str, Any]) -> None:
         .eq("zip", row["zip"])
         .eq("model_key", row["model_key"])
         .eq("predicted_at", row["predicted_at"])
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    if existing.data and existing.data.get("id"):
-        client.table("model_predictions").update(row).eq("id", existing.data["id"]).execute()
+    if existing.data and len(existing.data) > 0 and existing.data[0].get("id"):
+        client.table("model_predictions").update(row).eq("id", existing.data[0]["id"]).execute()
     else:
         client.table("model_predictions").insert(row).execute()
 

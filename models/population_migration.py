@@ -47,7 +47,7 @@ def _build_features(zip_code: str) -> dict:
     )
 
     snapshots = fetch_market_snapshots(zip_code, limit=90)
-    energy = fetch_energy_data("FL", limit=52)
+    energy = fetch_energy_data(zip_code, limit=52)
     census = fetch_census_acs(zip_code)
     zbp = fetch_census_zbp(zip_code)
 

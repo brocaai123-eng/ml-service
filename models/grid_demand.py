@@ -24,7 +24,7 @@ _feature_names = [
 def _build_features(zip_code: str, population_score: float | None = None) -> dict:
     from db import fetch_energy_data, fetch_market_snapshots
 
-    energy = fetch_energy_data("FL", limit=24)
+    energy = fetch_energy_data(zip_code, limit=24)
     snapshots = fetch_market_snapshots(zip_code, limit=60)
 
     consumption = [float(e.get("consumption_mwh") or 0) for e in energy if float(e.get("consumption_mwh") or 0) > 0]
